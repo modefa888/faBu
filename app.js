@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
         }
 
         // Telegram 消息处理
-        if (req.method === 'POST' && req.url === '/api/bot') {
+        if (req.method === 'GET' && req.url === '/api/bot') {
             return await handleTelegramUpdate(req, res);
         }
 

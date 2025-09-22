@@ -9,7 +9,7 @@
   "routes": [
     {
       "src": "/api/bot",
-      "methods": ["POST"],
+      "methods": ["GET"],
       "dest": "/app.js"
     },
     {
