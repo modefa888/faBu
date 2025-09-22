@@ -14,12 +14,12 @@ const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, {
         autoStart: true,
         params: {timeout: 60}
     },
-    request: {
-        agent: new HttpsProxyAgent({
-            host: process.env.PROXY_HOST,
-            port: process.env.PROXY_PORT,
-        })
-    }
+    // request: {
+    //     agent: new HttpsProxyAgent({
+    //         host: process.env.PROXY_HOST,
+    //         port: process.env.PROXY_PORT,
+    //     })
+    // }
 });
 
 // 初始化处理器
