@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
 
         // 健康检查端点
         if (req.method === 'GET' && req.url === '/health') {
-            return res.json({ status: 'ok', ts: Date.now() });
+            return res.json({ status: 'ok', ts: Date.now() , env: process.env });
         }
 
         res.status(404).send('Not Found');
