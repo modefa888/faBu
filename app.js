@@ -116,14 +116,13 @@ async function processUpdate(update) {
         }
     } finally {
         // ✅ 确保释放处理器资源
-        await pool.release();
+        // await pool.release();
     }
 }
 
 // ===================== 资源管理 =====================
 process.on('SIGTERM', async () => {
     console.log('🚨 接收到终止信号，清理资源...');
-    await pool.end().catch(console.error);
     await bot.closeWebHook().catch(console.error);
     process.exit(0);
 });
