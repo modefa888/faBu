@@ -53,12 +53,6 @@ async function initializeApp() {
         // ✅ 预热数据库连接
         await pool.query('SELECT 1');
 
-        // ✅ 预加载所有处理器
-        require('./src/mediaGroupHandler');
-        require('./src/videoHandler');
-        require('./src/randomSender');
-        require('./src/menu');
-
         console.log('⚡ App initialized');
         isInitialized = true;
     }
@@ -126,13 +120,3 @@ process.on('SIGTERM', async () => {
     await bot.closeWebHook().catch(console.error);
     process.exit(0);
 });
-
-// ===================== 启动校验 =====================
-if (require.main === module) {
-    // ✅ 本地开发模式
-    (async () => {
-        await initializeApp();
-        bot.startPolling();
-        console.log('🚀 本地开发模式启动成功');
-    })();
-}
