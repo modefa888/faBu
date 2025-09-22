@@ -63,39 +63,7 @@ npm start
 /start	显示欢迎信息
 /help	显示帮助文档
 /sj	随机发送存储的媒体内容
-数据库结构
--- 媒体组表
-CREATE TABLE media_groups (
-    id TEXT PRIMARY KEY,
-    content JSONB NOT NULL,
-    timestamp TIMESTAMP DEFAULT NOW()
-);
 
--- 视频表 
-CREATE TABLE videos (
-    id SERIAL PRIMARY KEY,
-    file_id TEXT NOT NULL,
-    user_id BIGINT NOT NULL,
-    timestamp TIMESTAMP DEFAULT NOW()
-);
-开发扩展
-// 添加新的消息处理器
-class CustomHandler {
-  constructor(bot, pool) {
-    this.bot = bot;
-    this.pool = pool;
-  }
-
-  handleMessage(msg) {
-    if (msg.text?.startsWith('/custom')) {
-      this.bot.sendMessage(msg.chat.id, 'Custom command received!');
-    }
-  }
-}
-
-// 在主流程中初始化
-const customHandler = new CustomHandler(bot, pool);
-bot.on('message', msg => customHandler.handleMessage(msg));
 🧩 项目结构
 telegram-media-bot/
 ├── src/
@@ -107,12 +75,7 @@ telegram-media-bot/
 ├── .env.example           # 环境配置示例
 ├── index.js              # 主入口文件
 └── package.json
-🤝 贡献指南
-Fork本仓库
-创建特性分支 (git checkout -b feature/awesome)
-提交修改 (git commit -m 'Add awesome feature')
-推送分支 (git push origin feature/awesome)
-发起Pull Request
+
 📜 许可协议
 本项目采用 MIT License
 
