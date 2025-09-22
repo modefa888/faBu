@@ -18,7 +18,7 @@
 - 📊 **数据持久化** - MySQL数据库存储
 - 👨💻 **管理功能** - 支持管理员权限校验
 
-➡️ 线上体验: https://t.me/@SaveSSvipBot
+➡️ 线上体验: https://t.me/SaveSSvipBot
 
 ## 🚀 快速开始
 
