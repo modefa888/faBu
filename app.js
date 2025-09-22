@@ -1,6 +1,6 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const { pool, initializeDB } = require('./src/database');
+const {pool, initializeDB} = require('./src/database');
 
 // ===================== 全局初始化 =====================
 const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, {
@@ -32,13 +32,13 @@ module.exports = async (req, res) => {
 
         // 健康检查端点
         if (req.method === 'GET' && req.url === '/health') {
-            return res.json({ status: 'ok', ts: Date.now() , env: process.env });
+            return res.json({status: 'ok', ts: Date.now(), env: process.env});
         }
 
         res.status(404).send('Not Found');
     } catch (err) {
         console.error('[FATAL]', err);
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({error: 'Server Error'});
     }
 };
 
@@ -86,10 +86,10 @@ async function handleTelegramUpdate(req, res) {
 
 // ===================== 业务逻辑 =====================
 async function processUpdate(update) {
-    const { MediaGroupHandler } = require('./src/mediaGroupHandler');
-    const { VideoHandler } = require('./src/videoHandler');
-    const { RandomMediaSender } = require('./src/randomSender');
-    const { MenuManager } = require('./src/menu');
+    const MediaGroupHandler = require('./src/mediaGroupHandler');
+    const VideoHandler = require('./src/videoHandler');
+    const RandomMediaSender = require('./src/randomSender');
+    const MenuManager = require('./src/menu');
 
     try {
         // ✅ 独立实例保证无状态
