@@ -1,0 +1,19 @@
+{
+  "name": "fabu",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "lodash": "^4.17.21",
+    "mysql2": "^3.14.5",
+    "node-telegram-bot-api": "^0.66.0",
+    "telegraf-inline-menu": "^6.3.0"
+  }
+}
