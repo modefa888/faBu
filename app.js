@@ -2,78 +2,138 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const { pool, initializeDB } = require('./src/database');
 
-// ✅ 改为 Webhook 模式（Vercel 无服务器函数不支持长轮询）
+// ===================== 全局初始化 =====================
 const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, {
     webHook: {
         port: process.env.PORT || 3000,
+        autoOpen: false // ✅ 禁用自动启动 webhook
+    },
+    request: {
+        agentOptions: {
+            keepAlive: true // ✅ 保持长连接提升性能
+        }
     }
 });
 
-// ✅ 添加 Vercel 的 serverless 请求处理函数
+// ===================== Serverless 入口 =====================
 module.exports = async (req, res) => {
     try {
-        // ✅ 动态设置 Webhook 地址（部署后生成）
-        if (req.url === '/setWebhook') {
-            const webhookUrl = `${process.env.VERCEL_URL}/api/bot`;
-            await bot.setWebHook(webhookUrl);
-            return res.send('Webhook set successfully');
+        await initializeApp(); // ✅ 确保冷启动初始化
+
+        // Webhook 设置端点
+        if (req.method === 'GET' && req.url === '/setWebhook') {
+            return await handleWebhookSetup(res);
         }
 
-        // ✅ 处理 Telegram 的 POST 请求
-        if (req.method === 'POST') {
-            const update = req.body;
-            await handleUpdate(update);
-            res.status(200).end();
+        // Telegram 消息处理
+        if (req.method === 'POST' && req.url === '/api/bot') {
+            return await handleTelegramUpdate(req, res);
         }
+
+        // 健康检查端点
+        if (req.method === 'GET' && req.url === '/health') {
+            return res.json({ status: 'ok', ts: Date.now() });
+        }
+
+        res.status(404).send('Not Found');
     } catch (err) {
-        console.error('Serverless Error:', err);
-        res.status(500).send('Internal Server Error');
+        console.error('[FATAL]', err);
+        res.status(500).json({ error: 'Server Error' });
     }
 };
 
-// ✅ 初始化逻辑（Vercel 冷启动时执行）
+// ===================== 核心逻辑 =====================
 let isInitialized = false;
 
-async function initialize() {
+async function initializeApp() {
     if (!isInitialized) {
+        // ✅ 数据库初始化
         await initializeDB();
-        console.log('🤖 机器人初始化完成');
+
+        // ✅ 预热数据库连接
+        await pool.query('SELECT 1');
+
+        // ✅ 预加载所有处理器
+        require('./src/mediaGroupHandler');
+        require('./src/videoHandler');
+        require('./src/randomSender');
+        require('./src/menu');
+
+        console.log('⚡ App initialized');
         isInitialized = true;
     }
 }
 
-// ✅ 消息处理逻辑拆分
-async function handleUpdate(update) {
-    await initialize();
-
-    // 原有消息处理逻辑保持不变...
-    const MediaGroupHandler = require('./src/mediaGroupHandler');
-    const VideoHandler = require("./src/videoHandler");
-    const RandomMediaSender = require('./src/randomSender');
-    const MenuManager = require('./src/menu');
-
-    // ✅ 实例化需要每次请求创建的处理器
-    new MenuManager(bot);
-
-    const mediaHandler = new MediaGroupHandler(bot, pool);
-    const videoHandler = new VideoHandler(bot, pool);
-    const randomSender = new RandomMediaSender(bot);
-
-    // ✅ 消息处理逻辑
-    if (update.message) {
-        const msg = update.message;
-
-        mediaHandler.handleMessage(msg);
-        videoHandler.handleMessage(msg);
-
-        if (msg.text === '/sj') {
-            randomSender.handleCommand(msg);
-        }
+async function handleWebhookSetup(res) {
+    try {
+        const webhookUrl = `${process.env.VERCEL_URL}/api/bot`;
+        await bot.setWebHook(webhookUrl, {
+            max_connections: 50,
+            allowed_updates: ['message', 'callback_query']
+        });
+        res.send(`✅ Webhook configured: ${webhookUrl}`);
+    } catch (err) {
+        console.error('Webhook setup failed:', err);
+        res.status(500).send('Webhook setup failed');
     }
 }
 
-// ✅ 添加数据库连接释放（针对 Vercel 无服务器环境）
-process.on('beforeExit', async () => {
-    console.log('Releasing database connections');
-    await pool.end();
+async function handleTelegramUpdate(req, res) {
+    const update = req.body;
+    try {
+        // ✅ 异步处理避免超时
+        processUpdate(update);
+        res.status(200).end();
+    } catch (err) {
+        console.error('Update process error:', err);
+        res.status(500).end();
+    }
+}
+
+// ===================== 业务逻辑 =====================
+async function processUpdate(update) {
+    const { MediaGroupHandler } = require('./src/mediaGroupHandler');
+    const { VideoHandler } = require('./src/videoHandler');
+    const { RandomMediaSender } = require('./src/randomSender');
+    const { MenuManager } = require('./src/menu');
+
+    try {
+        // ✅ 独立实例保证无状态
+        const mediaHandler = new MediaGroupHandler(bot, pool);
+        const videoHandler = new VideoHandler(bot, pool);
+        const randomSender = new RandomMediaSender(bot);
+        new MenuManager(bot);
+
+        if (update.message) {
+            const msg = update.message;
+
+            await mediaHandler.handleMessage(msg);
+            await videoHandler.handleMessage(msg);
+
+            if (msg.text === '/sj') {
+                await randomSender.handleCommand(msg);
+            }
+        }
+    } finally {
+        // ✅ 确保释放处理器资源
+        await pool.release();
+    }
+}
+
+// ===================== 资源管理 =====================
+process.on('SIGTERM', async () => {
+    console.log('🚨 接收到终止信号，清理资源...');
+    await pool.end().catch(console.error);
+    await bot.closeWebHook().catch(console.error);
+    process.exit(0);
 });
+
+// ===================== 启动校验 =====================
+if (require.main === module) {
+    // ✅ 本地开发模式
+    (async () => {
+        await initializeApp();
+        bot.startPolling();
+        console.log('🚀 本地开发模式启动成功');
+    })();
+}
