@@ -14,6 +14,12 @@
     },
     {
       "src": "/setWebhook",
+      "methods": ["GET"],
+      "dest": "/app.js"
+    },
+    {
+      "src": "/health",
+      "methods": ["GET"],
       "dest": "/app.js"
     }
   ]
